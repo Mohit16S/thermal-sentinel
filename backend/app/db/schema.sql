@@ -1,0 +1,11 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE TABLE IF NOT EXISTS thermal_observations (id bigserial PRIMARY KEY, latitude double precision NOT NULL, longitude double precision NOT NULL, observed_at timestamptz NOT NULL, brightness real, confidence real, satellite text, instrument text, geom geometry(Point,4326) NOT NULL);
+CREATE TABLE IF NOT EXISTS thermal_events (event_id text PRIMARY KEY, centroid geometry(Point,4326) NOT NULL, footprint geometry(Polygon,4326), first_seen timestamptz, last_seen timestamptz, observation_count integer, persistence_score real, anomaly_score real);
+CREATE TABLE IF NOT EXISTS industrial_features (osm_id text PRIMARY KEY, name text, feature_type text, geom geometry(Geometry,4326) NOT NULL, properties jsonb);
+CREATE TABLE IF NOT EXISTS event_classifications (id bigserial PRIMARY KEY, event_id text REFERENCES thermal_events(event_id), classification text, confidence real, evidence jsonb, model_mode text, created_at timestamptz DEFAULT now());
+CREATE TABLE IF NOT EXISTS event_risk_scores (id bigserial PRIMARY KEY, event_id text REFERENCES thermal_events(event_id), score real, level text, explanation text, factors jsonb, created_at timestamptz DEFAULT now());
+CREATE TABLE IF NOT EXISTS event_history (id bigserial PRIMARY KEY, event_id text REFERENCES thermal_events(event_id), observed_on date, observation_count integer, mean_brightness real);
+CREATE INDEX IF NOT EXISTS ix_observations_geom ON thermal_observations USING gist(geom);
+CREATE INDEX IF NOT EXISTS ix_events_centroid ON thermal_events USING gist(centroid);
+CREATE INDEX IF NOT EXISTS ix_industrial_geom ON industrial_features USING gist(geom);
+-- Example correlation: SELECT e.event_id,f.name,ST_Distance(e.centroid::geography,f.geom::geography) FROM thermal_events e JOIN industrial_features f ON ST_DWithin(e.centroid::geography,f.geom::geography,2000);

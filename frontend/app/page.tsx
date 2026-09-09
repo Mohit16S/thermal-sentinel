@@ -1,0 +1,2 @@
+import DashboardClient from '@/components/DashboardClient';import {getEvents,getStats} from '@/lib/api';
+export default async function Page(){const [events,stats]=await Promise.all([getEvents(),getStats()]);return events.length?<DashboardClient events={events} stats={stats}/>:<div className="p-12"><h1 className="text-2xl">Backend unavailable</h1><p className="muted mt-2">Start the FastAPI service on port 8000, then refresh. Demo mode remains safe and no external keys are required.</p></div>}
