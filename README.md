@@ -2,146 +2,161 @@
 
 **SIH26162 — AI-Based Detection and Classification of Industrial Fires and Persistent Thermal Sources Using NASA FIRMS, OSM & Satellite Data**
 
-Thermal Sentinel is a deployable geospatial decision-support prototype that turns thermal observations into clustered events, adds industrial and historical context, measures persistence and anomaly, assigns an explainable classification and risk score, and supports investigation and incident-report export.
+Thermal Sentinel is a single, Vercel-ready Next.js geospatial intelligence application. It cleans and clusters thermal observations, adds industrial and historical context, measures persistence and anomaly, applies an AI-assisted explainable classification baseline, prioritizes events with transparent risk scoring, and generates investigation reports.
 
-> The bundled experience is **SYNTHETIC DEMONSTRATION DATA**. Its classifier is an **explainable rule-based baseline**, not a trained production ML model. It does not confirm fires. Satellite images are never invented.
-
-## Why it matters
-
-A heat-point map creates noise, not operational clarity. Thermal Sentinel implements the full `SCOUT → DETECT → CORRELATE → CLASSIFY → PRIORITIZE → REPORT` workflow and makes every prioritization inspectable.
+> Demo mode uses **SYNTHETIC DEMONSTRATION DATA**. It never claims real FIRMS observations, satellite imagery, trained-model accuracy, or confirmed fires.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  A[NASA FIRMS / Demo adapter] --> B[Validation & deduplication]
-  B --> C[DBSCAN + H3 clustering]
-  C --> D[PostGIS event store]
-  E[OSM / cached Overpass] --> F[Industrial context]
-  D --> F
-  G[Historical FIRMS / Parquet] --> H[Persistence + anomaly]
-  D --> H
-  F --> I[Explainable classification]
-  H --> I
-  I --> J[Weighted risk engine]
-  J --> K[Next.js command center]
-  K --> L[Investigation + PDF / JSON / CSV]
-  M[Sentinel / Landsat adapters] -. contextual verification .-> K
-  R[(Redis cache)] -.-> E
+  A[NASA FIRMS or demo adapter] --> B[Next.js Route Handlers]
+  B --> C[Cleaning + H3 clustering]
+  C --> D[OSM industrial correlation]
+  D --> E[Persistence + anomaly]
+  E --> F[Explainable classification]
+  F --> G[Risk engine]
+  G --> H[Dashboard + investigation]
+  H --> I[PDF / JSON / CSV report]
+  J[(Optional PostgreSQL + PostGIS)] -. production persistence .-> B
 ```
 
-## Technology
+There is no FastAPI server, Python runtime, Docker sidecar, or second deployment. Secrets remain inside server-side Route Handlers.
 
-- Next.js, React, TypeScript, Tailwind, Recharts, Mapbox GL JS with a token-free geospatial fallback
-- FastAPI, Pydantic, ReportLab
-- Python analytics architecture for scikit-learn/XGBoost, DBSCAN, GeoPandas/Shapely, H3 and pyproj
-- PostgreSQL 16 + PostGIS geometry columns and GiST indexes; Redis-ready caching
-- Docker Compose for frontend, backend, PostGIS and Redis
+## Features preserved and improved
 
-## Run with Docker
+- Professional dark command center, event queue, filters, analytical charts and map legend
+- Mapbox through `react-map-gl`, server-provided GeoJSON, clustering, popups, zoom/pan controls, and a no-token fallback
+- Deterministic 32-event demo with persistent industrial source, industrial fire, wildfire, agricultural burning, and unknown scenarios
+- Judge funnel: **127 observations → 32 clustered events → 11 significant → 5 high priority → 2 critical**
+- H3 clustering, coordinate validation, persistence, anomaly, six-class explainable classification and configurable risk weights
+- Investigation timeline, persistence evidence, risk breakdown, industrial context, satellite status, recommended action and disclaimer
+- Vercel-compatible in-memory PDF, JSON and CSV exports with no filesystem writes
+- Demo/live switch; live FIRMS and OSM failures return clear status and safely fall back
+- Optional PostGIS schema retained at `lib/db/schema.sql`
+
+## Intelligence methodology
+
+The pipeline remains `SCOUT → DETECT → CORRELATE → CLASSIFY → PRIORITIZE → REPORT`.
+
+Persistence uses observation count, active days, recurrence and temporal span. A single observation is always `TRANSIENT`. Anomaly scoring combines brightness deviation, local density, temporal behavior and spatial isolation. Classification uses thermal, temporal, industrial and land-use evidence and is explicitly labeled an **AI-assisted explainable baseline**, not a trained model.
+
+Risk weights are configurable in `lib/risk-engine.ts`:
+
+| Factor | Weight |
+|---|---:|
+| Thermal intensity | 20% |
+| Detection confidence | 15% |
+| Persistence | 20% |
+| Industrial context | 20% |
+| Event size | 10% |
+| Recurrence | 10% |
+| Anomaly | 5% |
+
+Risk bands are Low 0–25, Medium 26–50, High 51–75 and Critical 76–100. Every result includes a factor breakdown and explanation.
+
+## Local setup
+
+Requires Node.js 20 or newer.
 
 ```bash
+git clone https://github.com/Mohit16S/thermal-sentinel.git
 cd thermal-sentinel
-docker compose up --build
-```
-
-Open [http://localhost:3000](http://localhost:3000). API docs are at [http://localhost:8000/docs](http://localhost:8000/docs).
-
-## Local development (no Docker)
-
-Backend (Python 3.11+):
-
-```bash
-cd thermal-sentinel/backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-Frontend (Node 20+), in another terminal:
-
-```bash
-cd thermal-sentinel/frontend
 cp .env.example .env.local
 npm install
 npm run dev
 ```
 
-The local demo is intentionally in-memory and requires neither PostgreSQL nor Redis. Production-shaped PostGIS schema initialization is automatic in Docker from `backend/app/db/schema.sql`.
+Open [http://localhost:3000](http://localhost:3000). Demo mode works without environment variables.
+
+Verification commands:
+
+```bash
+npm test
+npm run lint
+npm run build
+npm start
+```
 
 ## Environment variables
 
-| Variable | Purpose | Required for demo |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL/PostGIS connection | No |
-| `REDIS_URL` | shared cache | No |
-| `NASA_FIRMS_API_KEY` | future live FIRMS adapter | No |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox basemap | No; fallback renders automatically |
-| `NEXT_PUBLIC_API_URL` | browser/server API base | Defaults to `http://localhost:8000` |
-| `CORS_ORIGINS` | allowed frontend origins | No |
-
-Copy the `.env.example` files in `frontend/` and `backend/`. Never commit credentials.
-
-## API
-
-FastAPI publishes OpenAPI automatically. Key routes include health and source status, dashboard statistics, event list/detail/history/context/satellite/analysis, high-risk events, analysis execution, and PDF/JSON/CSV reports. Use `/docs` for the exact contract.
-
-## Methodology
-
-### Detection and geospatial context
-
-The target live pipeline validates coordinates and timestamps, removes duplicates, groups observations using DBSCAN/H3, and persists event geometries. Industrial correlation uses distance and zone membership; the schema includes the equivalent `ST_DWithin` query and spatial indexes. Proximity is evidence, never confirmation.
-
-### Persistence
-
-The score combines observation count, active days, temporal span and recurrence. A single observation is forcibly labeled `TRANSIENT`, regardless of intensity. Repeated evidence can progress through `RECURRING`, `PERSISTENT`, and `HIGHLY PERSISTENT`.
-
-### Classification
-
-The MVP baseline evaluates intensity, recurrence, persistence, industrial context and land-use context. It returns a class, confidence-like heuristic score, and human-readable evidence. The service boundary is designed so a validated XGBoost or Random Forest artifact can replace this baseline later. No accuracy claim is made.
-
-### Transparent risk scoring
-
-Default weights are intensity 20%, detection confidence 15%, persistence 20%, industrial context 20%, size 10%, recurrence 10%, and anomaly 5%. Thresholds: Low 0–25, Medium 26–50, High 51–75, Critical 76–100. Each event includes its leading drivers.
-
-## Demo walkthrough (3–5 minutes)
-
-1. Open the Command Center and call out the permanent synthetic-data badge.
-2. Explain the funnel: **127 observations → 32 clustered events → 11 significant → 5 high priority → 2 critical**.
-3. Filter to Critical and select the leading event on the map or priority queue.
-4. Open its investigation dossier: intensity, timeline, persistence, anomaly, OSM-like context and evidence.
-5. Explain that industrial proximity is corroborating context—not proof—and satellite imagery is explicitly unavailable.
-6. Export the incident dossier as PDF, JSON or CSV.
-
-## Tests and build
-
-```bash
-cd thermal-sentinel/backend
-pytest -q
-
-cd ../frontend
-npm run build
+```dotenv
+NEXT_PUBLIC_MAPBOX_TOKEN=
+NASA_FIRMS_API_KEY=
+DATABASE_URL=
 ```
 
-## Data transparency and limitations
+- `NEXT_PUBLIC_MAPBOX_TOKEN`: optional browser-visible Mapbox public token. Without it, the safe fallback map appears.
+- `NASA_FIRMS_API_KEY`: optional server-only key used by `/api/firms` and live pipeline mode. Never prefix it with `NEXT_PUBLIC_`.
+- `DATABASE_URL`: optional PostgreSQL/PostGIS connection for a future persistent data adapter. The current serverless demo does not require or write to a database.
 
-- **Bundless demo:** deterministic synthetic FIRMS-like measurements and synthetic OSM-like context.
-- **Real architecture:** PostGIS schema, geospatial calculation boundaries, source adapters and export pipeline.
-- **Not implemented as live evidence:** live FIRMS fetch, Overpass lookup and optical/SAR imagery retrieval require credentials/network and operational hardening.
-- Cloud cover, sensor revisit time, spatial resolution, false positives and missing historical coverage can all constrain conclusions.
-- Classifications and priorities support qualified analysts; they are not incident confirmation or an emergency dispatch instruction.
+## Route Handlers
 
-## Roadmap
+- `GET /api/health`
+- `GET /api/dashboard/stats?mode=demo|live`
+- `GET|POST /api/events`
+- `GET /api/events/high-risk`
+- `GET /api/events/[id]`
+- `GET /api/events/[id]/history`
+- `GET /api/events/[id]/context`
+- `GET /api/events/[id]/satellite`
+- `GET /api/events/[id]/analysis`
+- `POST /api/analysis`
+- `GET /api/firms?mode=live`
+- `GET /api/osm?lat=...&lon=...`
+- `GET /api/reports/[id]`
+- `GET|POST /api/reports/[id]/generate?format=pdf|json|csv`
 
-1. Validate the explainable baseline with analyst-reviewed labels.
-2. Train and calibrate XGBoost/Random Forest with temporal holdouts.
-3. Add Sentinel-2/Sentinel-1 contextual models and provenance.
-4. Add spatiotemporal forecasting.
-5. Add authenticated monitoring, alerting and audit trails.
-6. Add field-verification workflow and feedback-driven retraining.
+External fetches use Next.js revalidation caching. FIRMS is cached for 15 minutes and Overpass context for 24 hours.
 
-## Screenshots
+## GitHub push
 
-Capture the Command Center and investigation dossier after starting the app; no static screenshot is presented as real live-source evidence.
-# thermal-sentinel
+The repository already has `origin` configured. Review before publishing:
+
+```bash
+git status
+git diff --stat
+git add -A
+git commit -m "Migrate Thermal Sentinel to a single Vercel-ready Next.js app"
+git push origin main
+```
+
+If starting from a repository without a remote:
+
+```bash
+git init
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/thermal-sentinel.git
+git add -A
+git commit -m "Initial Vercel-ready Thermal Sentinel"
+git push -u origin main
+```
+
+## Vercel deployment
+
+1. Push the repository to GitHub.
+2. In Vercel, choose **Add New → Project** and import the repository.
+3. Keep Framework Preset as **Next.js** and Root Directory as `./`.
+4. Add `NEXT_PUBLIC_MAPBOX_TOKEN`, `NASA_FIRMS_API_KEY`, and `DATABASE_URL` only when available.
+5. Select **Deploy**. No backend project, server command, persistent disk, or Docker service is required.
+6. After deployment, verify `/`, `/investigation/TS-2026-0001`, `/api/health`, and report downloads.
+
+## Demo walkthrough
+
+1. Start on the command center and identify the `SYNTHETIC DEMONSTRATION DATA` badge.
+2. Explain the 127→32→11→5→2 prioritization funnel.
+3. Filter to Critical and select `TS-2026-0001`.
+4. Inspect thermal history, persistence, risk factors, OSM-like industrial context and explainable evidence.
+5. Note that satellite imagery is explicitly unavailable and no fire is confirmed.
+6. Export PDF, JSON or CSV.
+7. Show Live Mode; without a FIRMS key it displays the failure reason and returns safely to demo data.
+
+## Limitations and roadmap
+
+- The included OSM facilities are synthetic demo context; live event-specific Overpass enrichment is available through the API but can be rate-limited.
+- Live FIRMS mode depends on NASA availability, credentials and network access. Cache duration is designed for serverless execution.
+- Satellite services expose honest verification status; imagery retrieval and computer-vision analysis are future work.
+- `DATABASE_URL` is reserved for an optional managed PostGIS adapter; Vercel instances must not rely on local files or in-memory persistence.
+- Production work should add authentication, rate limiting, analyst-reviewed labels, calibrated XGBoost/Random Forest inference, managed PostGIS storage and field-verification feedback.
+
+This assessment is decision-support information and does not independently confirm a fire.

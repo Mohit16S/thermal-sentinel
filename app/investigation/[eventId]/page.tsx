@@ -1,0 +1,2 @@
+import {getEvent} from '@/lib/api';import {parseMode} from '@/lib/mode';import InvestigationClient from '@/components/InvestigationClient';import {notFound} from 'next/navigation';
+export const dynamic='force-dynamic';export default async function Page({params,searchParams}:{params:Promise<{eventId:string}>;searchParams:Promise<{mode?:string}>}){const[{eventId},query]=await Promise.all([params,searchParams]);const mode=parseMode(query.mode);const event=await getEvent(eventId,mode);if(!event)notFound();return <InvestigationClient event={event} mode={mode}/>}

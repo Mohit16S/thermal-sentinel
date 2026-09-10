@@ -1,0 +1,1 @@
+import {NextResponse} from 'next/server';import {findEvent} from '@/lib/pipeline';export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){const{id}=await params;const event=await findEvent(id);return event?NextResponse.json(event.satellite):NextResponse.json({detail:'Event not found'},{status:404})}

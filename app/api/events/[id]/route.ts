@@ -1,0 +1,2 @@
+import {NextRequest,NextResponse} from 'next/server';import {findEvent} from '@/lib/pipeline';import {parseMode} from '@/lib/mode';
+export const dynamic='force-dynamic';export async function GET(request:NextRequest,{params}:{params:Promise<{id:string}>}){const{id}=await params;const event=await findEvent(id,parseMode(request.nextUrl.searchParams.get('mode')));return event?NextResponse.json(event):NextResponse.json({detail:'Event not found'},{status:404})}

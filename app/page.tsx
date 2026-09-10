@@ -1,0 +1,2 @@
+import DashboardClient from '@/components/DashboardClient';import {parseMode} from '@/lib/mode';import {runPipeline} from '@/lib/pipeline';
+export const dynamic='force-dynamic';export default async function Page({searchParams}:{searchParams:Promise<{mode?:string}>}){const query=await searchParams;const result=await runPipeline(parseMode(query.mode));return <DashboardClient events={result.events} stats={result.stats} mode={result.mode} warning={result.warning}/>}

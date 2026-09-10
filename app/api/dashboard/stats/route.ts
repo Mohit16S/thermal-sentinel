@@ -1,0 +1,2 @@
+import { NextRequest,NextResponse } from 'next/server';import {parseMode} from '@/lib/mode';import {runPipeline} from '@/lib/pipeline';
+export const dynamic='force-dynamic';export async function GET(request:NextRequest){const result=await runPipeline(parseMode(request.nextUrl.searchParams.get('mode')));return NextResponse.json({...result.stats,source_status:result.sourceStatus,warning:result.warning})}

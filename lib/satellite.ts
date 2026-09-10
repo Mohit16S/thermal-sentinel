@@ -1,0 +1,1 @@
+export function getSatelliteContext(){return{available:false,message:'Satellite imagery unavailable for this event.',sources:['Sentinel-2','Sentinel-1','Landsat'],purpose:'Contextual verification only'}}

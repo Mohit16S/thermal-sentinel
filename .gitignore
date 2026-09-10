@@ -1,8 +1,11 @@
 .env
+.env.local
 .next/
 node_modules/
+.vercel/
+coverage/
+npm-debug.log*
+*.tsbuildinfo
+backend/.venv/
 __pycache__/
 *.pyc
-.pytest_cache/
-*.db
-pgdata/
