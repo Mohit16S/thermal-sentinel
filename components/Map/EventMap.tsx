@@ -1,6 +1,19 @@
 'use client';
-import {useMemo,useState} from 'react';import Map,{Layer,NavigationControl,Popup,Source} from 'react-map-gl';import {Event,Risk} from '@/types';
-const color:Record<Risk,string>={CRITICAL:'#ff4d57',HIGH:'#ff903d',MEDIUM:'#e9cc51',LOW:'#4bc17b'};
-export default function EventMap({events,selected,onSelect}:{events:Event[];selected?:string;onSelect?:(e:Event)=>void}){const token=process.env.NEXT_PUBLIC_MAPBOX_TOKEN;const [popup,setPopup]=useState<Event|undefined>();const geojson=useMemo(()=>({type:'FeatureCollection' as const,features:events.map(e=>({type:'Feature' as const,geometry:{type:'Point' as const,coordinates:[e.longitude,e.latitude]},properties:{event_id:e.event_id,risk_level:e.risk_level,risk_score:e.risk_score,classification:e.classification}}))}),[events]);if(!token)return <Fallback events={events} selected={selected} onSelect={onSelect}/>;return <div className="relative h-full min-h-[430px] overflow-hidden rounded-lg"><Map mapboxAccessToken={token} initialViewState={{longitude:82.5,latitude:21.5,zoom:5.4}} mapStyle="mapbox://styles/mapbox/dark-v11" interactiveLayerIds={['event-points']} onClick={event=>{const id=event.features?.[0]?.properties?.event_id;const found=events.find(item=>item.event_id===id);if(found){setPopup(found);onSelect?.(found)}}}><NavigationControl position="top-right"/><Source id="thermal-events" type="geojson" data={geojson} cluster clusterMaxZoom={11} clusterRadius={42}><Layer id="event-clusters" type="circle" filter={['has','point_count']} paint={{'circle-color':'#17877f','circle-radius':['step',['get','point_count'],17,10,23,25,29],'circle-stroke-color':'#67e8dc','circle-stroke-width':1}}/><Layer id="cluster-count" type="symbol" filter={['has','point_count']} layout={{'text-field':['get','point_count_abbreviated'],'text-size':11}} paint={{'text-color':'#fff'}}/><Layer id="event-points" type="circle" filter={['!',['has','point_count']]} paint={{'circle-radius':['+',6,['*',.08,['get','risk_score']]],'circle-color':['match',['get','risk_level'],'CRITICAL',color.CRITICAL,'HIGH',color.HIGH,'MEDIUM',color.MEDIUM,color.LOW],'circle-stroke-width':2,'circle-stroke-color':'#071013'}}/></Source>{popup&&<Popup longitude={popup.longitude} latitude={popup.latitude} closeButton onClose={()=>setPopup(undefined)}><div className="text-[#071013] text-xs"><b>{popup.event_id}</b><div>{popup.classification}</div><div>{popup.risk_level} · {popup.risk_score}/100</div></div></Popup>}</Map><Legend/></div>}
-function Fallback({events,selected,onSelect}:{events:Event[];selected?:string;onSelect?:(e:Event)=>void}){return <div className="relative h-full min-h-[430px] overflow-hidden rounded-lg bg-[#091a1f] grid-bg"><svg className="absolute inset-0 w-full h-full opacity-25"><path d="M50,280 C180,80 340,360 520,110 S780,330 980,90" fill="none" stroke="#3a717d" strokeWidth="2"/><path d="M10,110 C260,230 390,20 680,200 S900,180 1100,290" fill="none" stroke="#2b5963"/></svg>{events.map(e=>{const x=8+(e.longitude-68)/29*84,y=88-(e.latitude-7)/30*76;return <button aria-label={`${e.event_id} ${e.risk_level}`} title={`${e.event_id}: ${e.classification}`} key={e.event_id} onClick={()=>onSelect?.(e)} className="absolute rounded-full transition-transform hover:scale-150" style={{left:`${Math.max(3,Math.min(95,x))}%`,top:`${Math.max(5,Math.min(92,y))}%`,width:8+e.risk_score/8,height:8+e.risk_score/8,background:color[e.risk_level],boxShadow:`0 0 16px ${color[e.risk_level]}99`,border:selected===e.event_id?'2px solid white':'2px solid #071013'}}/>})}<div className="absolute top-3 left-3 text-[10px] bg-[#071013cc] border border-[#244149] rounded px-2 py-1">GEOSPATIAL FALLBACK · Add Mapbox token for interactive basemap</div><Legend/></div>}
-function Legend(){return <div className="absolute bottom-3 left-3 z-10 flex gap-3 bg-[#071013dd] border border-[#233c42] rounded p-2">{Object.entries(color).map(([key,value])=><span className="text-[9px] flex items-center gap-1" key={key}><i className="w-2 h-2 rounded-full" style={{background:value}}/>{key}</span>)}</div>}
+
+import dynamic from 'next/dynamic';
+import type {Event} from '@/types';
+
+export interface EventMapProps {
+  events: Event[];
+  selected?: string;
+  onSelect?: (event: Event) => void;
+}
+
+const LeafletEventMap = dynamic(() => import('./LeafletEventMap'), {
+  ssr: false,
+  loading: () => <div className="panel grid h-full min-h-64 place-items-center text-xs text-[#86a0a6]">Loading geographic context…</div>,
+});
+
+export default function EventMap(props: EventMapProps) {
+  return <LeafletEventMap {...props}/>;
+}

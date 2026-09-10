@@ -26,7 +26,7 @@ There is no FastAPI server, Python runtime, Docker sidecar, or second deployment
 ## Features preserved and improved
 
 - Professional dark command center, event queue, filters, analytical charts and map legend
-- Mapbox through `react-map-gl`, server-provided GeoJSON, clustering, popups, zoom/pan controls, and a no-token fallback
+- Leaflet and React Leaflet with real OpenStreetMap tiles, marker clustering, event popups, risk halos, industrial overlays, zoom/pan controls, and automatic event bounds
 - Deterministic 32-event demo with persistent industrial source, industrial fire, wildfire, agricultural burning, and unknown scenarios
 - Judge funnel: **127 observations → 32 clustered events → 11 significant → 5 high priority → 2 critical**
 - H3 clustering, coordinate validation, persistence, anomaly, six-class explainable classification and configurable risk weights
@@ -81,14 +81,14 @@ npm start
 ## Environment variables
 
 ```dotenv
-NEXT_PUBLIC_MAPBOX_TOKEN=
 NASA_FIRMS_API_KEY=
 DATABASE_URL=
 ```
 
-- `NEXT_PUBLIC_MAPBOX_TOKEN`: optional browser-visible Mapbox public token. Without it, the safe fallback map appears.
 - `NASA_FIRMS_API_KEY`: optional server-only key used by `/api/firms` and live pipeline mode. Never prefix it with `NEXT_PUBLIC_`.
 - `DATABASE_URL`: optional PostgreSQL/PostGIS connection for a future persistent data adapter. The current serverless demo does not require or write to a database.
+
+The map requires no API token. It uses the standard OpenStreetMap tile endpoint with visible OpenStreetMap attribution.
 
 ## Route Handlers
 
@@ -137,7 +137,7 @@ git push -u origin main
 1. Push the repository to GitHub.
 2. In Vercel, choose **Add New → Project** and import the repository.
 3. Keep Framework Preset as **Next.js** and Root Directory as `./`.
-4. Add `NEXT_PUBLIC_MAPBOX_TOKEN`, `NASA_FIRMS_API_KEY`, and `DATABASE_URL` only when available.
+4. Add `NASA_FIRMS_API_KEY` and `DATABASE_URL` only when available. Neither is required for demo mode, and the map needs no environment variable.
 5. Select **Deploy**. No backend project, server command, persistent disk, or Docker service is required.
 6. After deployment, verify `/`, `/investigation/TS-2026-0001`, `/api/health`, and report downloads.
 
@@ -154,6 +154,7 @@ git push -u origin main
 ## Limitations and roadmap
 
 - The included OSM facilities are synthetic demo context; live event-specific Overpass enrichment is available through the API but can be rate-limited.
+- The standard OpenStreetMap tile service is appropriate for this prototype and must be used in accordance with its tile usage policy. A high-traffic production deployment should use a suitable hosted or self-hosted tile service without removing OpenStreetMap attribution.
 - Live FIRMS mode depends on NASA availability, credentials and network access. Cache duration is designed for serverless execution.
 - Satellite services expose honest verification status; imagery retrieval and computer-vision analysis are future work.
 - `DATABASE_URL` is reserved for an optional managed PostGIS adapter; Vercel instances must not rely on local files or in-memory persistence.
