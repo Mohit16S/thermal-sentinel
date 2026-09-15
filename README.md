@@ -2,7 +2,7 @@
 
 **SIH26162 — AI-Based Detection and Classification of Industrial Fires and Persistent Thermal Sources Using NASA FIRMS, OSM & Satellite Data**
 
-Thermal Sentinel is a single, Vercel-ready Next.js geospatial intelligence application. It cleans and clusters thermal observations, adds industrial and historical context, measures persistence and anomaly, applies an AI-assisted explainable classification baseline, prioritizes events with transparent risk scoring, and generates investigation reports.
+Thermal Sentinel is a single, Next.js geospatial intelligence application. It cleans and clusters thermal observations, adds industrial and historical context, measures persistence and anomaly, applies an AI-assisted explainable classification baseline, prioritizes events with transparent risk scoring, and generates investigation reports.
 
 > Demo mode uses **SYNTHETIC DEMONSTRATION DATA**. It never claims real FIRMS observations, satellite imagery, trained-model accuracy, or confirmed fires.
 
